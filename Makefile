@@ -5,7 +5,7 @@ TARGETS=producer consumer
 all: $(TARGETS)
 
 %: %.cpp
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $< -o $@
+	$(CXX) $(CXXFLAGS) $< $(LDFLAGS) -o $@
 
 clean:
 	rm -f $(TARGETS)

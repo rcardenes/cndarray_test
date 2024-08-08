@@ -4,8 +4,8 @@
 #include <fstream>
 #include <iterator>
 #include <random>
-#include <chrono>
 
+#include "common.h"
 #include <cnpy.h>
 #include <sw/redis++/redis++.h>
 
@@ -52,7 +52,7 @@ int main() {
     std::cerr << "Size;Generation(µs);ToString(µs);ToRedis(µs)\n";
 
     for(auto i=0; i < REPS; i++) {
-        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+        auto t1 = get_timestamp();
         auto idx = indices(gen);
         unsigned dim = SHAPES[idx];
 
@@ -63,17 +63,17 @@ int main() {
         std::vector<size_t> shape{ dim, dim };
 
         auto array = create_npy(data, shape);
-        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+        auto t2 = get_timestamp();
 
         auto str = std::string{array.begin(), array.end()};
-        std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
+        auto t3 = get_timestamp();
 
         redis.set("arr", str);
-        std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
-        std::cerr << dim << 'x' << dim << ';';
-        std::cerr << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << ';';
-        std::cerr << std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count() << ';';
-        std::cerr << std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count() << '\n';
+        auto t4 = get_timestamp();
+        std::cerr << dim << 'x' << dim << ';'
+                  << time_diff_us(t1, t2) << ';'
+                  << time_diff_us(t2, t3) << ';'
+                  << time_diff_us(t3, t4) << '\n';
     }
 
     return 0;
