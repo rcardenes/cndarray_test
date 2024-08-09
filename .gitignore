@@ -1,3 +1,5 @@
 *.npy
 producer
 consumer
+*.o
+.clangd

@@ -11,7 +11,7 @@
 
 using namespace sw::redis;
 
-constexpr unsigned REPS = 100;
+constexpr unsigned REPS = 1000;
 constexpr unsigned SHAPES[] = { 128, 256, 512, 1024, 2048 };
 
 std::vector<char> create_npy(std::vector<double>& data, const std::vector<size_t>& shape) {
@@ -75,6 +75,8 @@ int main() {
                   << time_diff_us(t2, t3) << ';'
                   << time_diff_us(t3, t4) << '\n';
     }
+
+    redis.set("arr::done", "1");
 
     return 0;
 }
