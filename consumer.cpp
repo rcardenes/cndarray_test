@@ -3,31 +3,38 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include <semaphore>
 #include <thread>
+#include <mutex>
+#include <optional>
 
 #include "common.h"
-#include "cnpy.h"
-#include "sw/redis++/redis++.h"
+#include "cxx_npy.h"
+#include "hiredis/hiredis.h"
 
-using namespace sw::redis;
+#if __cplusplus >= 201907L
+#include <semaphore>
+#else
+#include "semaphore.h"
+#endif
+
+std::mutex redis_mx;
 
 class Worker {
 public:
-    Worker(Redis* redis);
+    Worker(redisContext* ctx);
     void read_array();
     void quit();
     void loop();
 
 private:
-    Redis *_redis;
+    redisContext *_ctx;
     std::binary_semaphore inner_sem;
     std::binary_semaphore outer_sem;
     bool active;
 };
 
-Worker::Worker(Redis* redis)
-    : _redis{redis},
+Worker::Worker(redisContext* ctx)
+    : _ctx{ctx},
       inner_sem{0},
       outer_sem{1},
       active{true}
@@ -46,6 +53,21 @@ void Worker::quit() {
     inner_sem.release();
 }
 
+std::optional<std::vector<char>> get_array(redisContext* ctx) {
+    std::lock_guard<std::mutex> lock(redis_mx);
+
+    redisReply* reply = redisCommand("GET arr");
+    if (reply == nullptr || reply->type != REDIS_REPLY_STRING) {
+        return std::nullopt_t;
+    }
+
+    std::vector<char> resp{reply->str, reply->len};
+
+    freeReplyObject(reply);
+
+    return resp;
+}
+
 void Worker::loop() {
     size_t counter = 0;
     std::cout << "Size;FromRedis(µs)\n";
@@ -57,6 +79,7 @@ void Worker::loop() {
             break;
         }
         counter++;
+
         auto raw_array = _redis->get("arr");
         auto t2 = get_timestamp();
         bool fortran_order;
@@ -71,7 +94,7 @@ void Worker::loop() {
 }
 
 int main() {
-    auto redis = Redis("tcp://localhost:6379");
+    auto ctx = redisConnect("localhost", 6379);
     auto receiving = true;
     size_t counter = 0;
     Worker worker(&redis);
