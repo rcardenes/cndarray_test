@@ -35,4 +35,5 @@ include_directories("${PROJECT_SOURCE_DIR}" "${HIREDIS_INCLUDE}" "${REDIS_PLUS_P
 link_libraries(${HIREDIS_LIB} ${REDIS_PLUS_PLUS_LIB} ${CNPY_LIB})
 
 add_executable(producer producer.cpp)
+add_executable(parallel_producer parallel_producer.cpp)
 add_executable(consumer consumer.cpp)

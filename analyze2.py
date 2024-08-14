@@ -35,12 +35,8 @@ def calc_stats(data):
 
     return stats
 
-prod_total = defaultdict(list)
-prod_data = defaultdict(list)
-par_total = defaultdict(list)
-par_data = defaultdict(list)
-#cons_data = defaultdict(list)
-#cons_total = defaultdict(list)
+prod_total = [defaultdict(list), defaultdict(list), defaultdict(list)]
+prod_data = [defaultdict(list), defaultdict(list), defaultdict(list)]
 
 with open("parallel_producer_data_5.csv") as pd:
     rd = csv.reader(pd, delimiter=';')
@@ -49,8 +45,18 @@ with open("parallel_producer_data_5.csv") as pd:
         if key.lower() == "size":
             continue
 
-        prod_total[key].append(sum(float(k) for k in row[2:]) / 1000.)
-        prod_data[key].append(float(row[-1]) / 1000.)
+        prod_total[0][key].append(sum(float(k) for k in row[2:]) / 1000.)
+        prod_data[0][key].append(float(row[-1]) / 1000.)
+
+with open("parallel_producer_data_7.csv") as pd:
+    rd = csv.reader(pd, delimiter=';')
+    for row in rd:
+        key = row[0]
+        if key.lower() == "size":
+            continue
+
+        prod_total[1][key].append(sum(float(k) for k in row[2:]) / 1000.)
+        prod_data[1][key].append(float(row[-1]) / 1000.)
 
 with open("parallel_producer_data_6.csv") as pd:
     rd = csv.reader(pd, delimiter=';')
@@ -59,44 +65,26 @@ with open("parallel_producer_data_6.csv") as pd:
         if key.lower() == "size":
             continue
 
-        par_total[key].append(sum(float(k) for k in row[2:]) / 1000.)
-        par_data[key].append(float(row[-1]) / 1000.)
+        prod_total[2][key].append(sum(float(k) for k in row[2:]) / 1000.)
+        prod_data[2][key].append(float(row[-1]) / 1000.)
 
 
-# with open("consumer_data_4.csv") as pd:
-#     rd = csv.reader(pd, delimiter=';')
-#     for row in rd:
-#         key = row[0]
-#         if key.lower() == "size":
-#             continue
-#
-#         cons_data[key].append(float(row[1]) / 1000.)
-#         cons_total[key].append(sum(float(k) for k in row[1:]) / 1000.)
 
 fig, axs = plt.subplots(nrows=len(ORDER), ncols=1, layout='constrained')
 
-ptot_stats = calc_stats(prod_total)
-send_stats = calc_stats(prod_data)
-pptot_stats = calc_stats(par_total)
-psend_stats = calc_stats(par_data)
-# recv_stats = calc_stats(cons_data)
-# ctot_stats = calc_stats(cons_total)
+ptot_stats = [calc_stats(prod_total[k]) for k in range(3)]
+send_stats = [calc_stats(prod_data[k]) for k in range(3)]
 
 for n, key in enumerate(ORDER):
-    ptot = ptot_stats[key]
-    send = send_stats[key]
-    pptot = pptot_stats[key]
-    psend = psend_stats[key]
-    # recv = recv_stats[key]
-    # ctot = ctot_stats[key]
-    ptot['label'] = "|| Ser+Send"
-    send['label'] = "|| Send"
-    pptot['label'] = "|| Ser+Send * 4"
-    psend['label'] = "|| Send * 4"
-    # recv['label'] = "Recv"
-    # ctot['label'] = "Recv+Parse"
-    # stats = [ptot, send, recv, ctot]
-    stats = [ptot, send, pptot, psend]
+    ptot = [ptot_stats[k][key] for k in range(3)]
+    send = [send_stats[k][key] for k in range(3)]
+    ptot[0]['label'] = "|| Ser+Send"
+    send[0]['label'] = "|| Send"
+    ptot[2]['label'] = "|| Ser+Send * 2"
+    send[2]['label'] = "|| Send * 2"
+    ptot[1]['label'] = "|| Ser+Send * 4"
+    send[1]['label'] = "|| Send * 4"
+    stats = [ptot[0], send[0], ptot[1], send[1], ptot[2], send[2]]
     axs[n].bxp(stats)
 #    axs[n].set_yscale('symlog')
     axs[n].set_title(f"{key} array")
