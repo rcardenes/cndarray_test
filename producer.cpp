@@ -10,7 +10,9 @@
 #include <hiredis/hiredis.h>
 
 constexpr unsigned REPS = 1000;
-constexpr unsigned SHAPES[] = { 128, 256, 512, 1024, 2048 };
+constexpr unsigned SHAPES[] = { 128, 256, 512 };
+
+constexpr size_t MAX_DIM = 512;
 
 std::vector<unsigned char> read_file(std::string file_name) {
     std::ifstream npy_file(file_name, std::ios::binary | std::ios::ate);
@@ -45,26 +47,29 @@ int main() {
     }
 
     std::vector<std::vector<char>> templates;
+    std::vector<std::string_view> views;
     for (auto dim: SHAPES) {
         templates.push_back(npy::generate_template_array(dim));
+        auto&& templ = templates.back();
+        views.emplace_back(templ.data(), templ.size());
     }
 
     std::cout << "Size;Generation(µs);Serialization(µs);ToRedis(µs)\n";
+    std::vector<double> data(MAX_DIM*MAX_DIM);
 
     for(auto i=0; i < REPS; i++) {
         auto t1 = get_timestamp();
         auto idx = indices(gen);
         unsigned dim = SHAPES[idx];
-        std::vector<char>& buffer = templates[idx];
+        auto& buffer = templates[idx];
+        auto& sv = views[idx];
 
-        std::vector<double> data(dim * dim);
         for (int i = 0; i < (dim * dim); i++)
             data[i] = values(gen);
             // data[i] = double(i);
 
         auto t2 = get_timestamp();
         npy::serialize_array(data, buffer);
-        std::string_view sv{buffer.data(), buffer.size()};
         auto t3 = get_timestamp();
 
         redisCommand(ctx, "SET arr %b", sv.data(), sv.size());

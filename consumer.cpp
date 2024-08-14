@@ -79,6 +79,7 @@ void Worker::loop() {
 
 int main() {
     auto redis = Redis("tcp://localhost:6379");
+    redis.command<void>("CONFIG", "SET", "notify-keyspace-events", "K$");
     auto receiving = true;
     size_t counter = 0;
     Worker worker(&redis);
