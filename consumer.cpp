@@ -4,12 +4,6 @@
 #include <vector>
 #include <iostream>
 #include <thread>
-#include <mutex>
-#include <optional>
-
-#include "common.h"
-#include "cxx_npy.h"
-#include "hiredis/hiredis.h"
 
 #if __cplusplus >= 201907L
 #include <semaphore>
@@ -17,24 +11,28 @@
 #include "semaphore.h"
 #endif
 
-std::mutex redis_mx;
+#include "common.h"
+#include "cnpy.h"
+#include "sw/redis++/redis++.h"
+
+using namespace sw::redis;
 
 class Worker {
 public:
-    Worker(redisContext* ctx);
+    Worker(Redis* redis);
     void read_array();
     void quit();
     void loop();
 
 private:
-    redisContext *_ctx;
+    Redis *_redis;
     std::binary_semaphore inner_sem;
     std::binary_semaphore outer_sem;
     bool active;
 };
 
-Worker::Worker(redisContext* ctx)
-    : _ctx{ctx},
+Worker::Worker(Redis* redis)
+    : _redis{redis},
       inner_sem{0},
       outer_sem{1},
       active{true}
@@ -53,24 +51,9 @@ void Worker::quit() {
     inner_sem.release();
 }
 
-std::optional<std::vector<char>> get_array(redisContext* ctx) {
-    std::lock_guard<std::mutex> lock(redis_mx);
-
-    redisReply* reply = redisCommand("GET arr");
-    if (reply == nullptr || reply->type != REDIS_REPLY_STRING) {
-        return std::nullopt_t;
-    }
-
-    std::vector<char> resp{reply->str, reply->len};
-
-    freeReplyObject(reply);
-
-    return resp;
-}
-
 void Worker::loop() {
     size_t counter = 0;
-    std::cout << "Size;FromRedis(µs)\n";
+    std::cout << "Size;FromRedis(µs);Parse(µs)\n";
     do {
         inner_sem.acquire();
         auto t1 = get_timestamp();
@@ -78,23 +61,24 @@ void Worker::loop() {
             std::cerr << "Processed " << counter << " arrays\n";
             break;
         }
-        counter++;
-
         auto raw_array = _redis->get("arr");
         auto t2 = get_timestamp();
+        counter++;
         bool fortran_order;
         size_t word_size;
         std::vector<size_t> shape;
         cnpy::parse_npy_header(reinterpret_cast<unsigned char*>((*raw_array).data()), word_size, shape, fortran_order);
         size_t dim = shape[0];
+        auto t3 = get_timestamp();
         std::cout << dim << "x" << dim << ';'
-                  << time_diff_us(t1, t2) << '\n';
+                  << time_diff_us(t1, t2) << ';'
+                  << time_diff_us(t2, t3) << '\n';
         outer_sem.release();
     } while(true);
 }
 
 int main() {
-    auto ctx = redisConnect("localhost", 6379);
+    auto redis = Redis("tcp://localhost:6379");
     auto receiving = true;
     size_t counter = 0;
     Worker worker(&redis);
@@ -113,7 +97,7 @@ int main() {
     sub.subscribe("__keyspace@0__:arr::done");
 
 
-    std::jthread t_receiver{[&]() {
+    std::thread t_receiver{[&]() {
         while (receiving) {
             try {
                 sub.consume();

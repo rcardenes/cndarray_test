@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib
 from matplotlib import pyplot as plt
 
-ORDER = ("128x128", "256x256", "512x512", "1024x1024", "2048x2048")
+ORDER = ("128x128", "256x256", "512x512")
 
 def calc_stats(data):
     stats = {}
@@ -38,38 +38,45 @@ def calc_stats(data):
 prod_total = defaultdict(list)
 prod_data = defaultdict(list)
 cons_data = defaultdict(list)
+cons_total = defaultdict(list)
 
-with open("producer_data_2.csv") as pd:
+with open("producer_data_4.csv") as pd:
     rd = csv.reader(pd, delimiter=';')
     for row in rd:
         key = row[0]
         if key.lower() == "size":
             continue
 
-        prod_total[key].append(sum(float(k) for k in row[1:]) / 1000.)
+        prod_total[key].append(sum(float(k) for k in row[2:]) / 1000.)
         prod_data[key].append(float(row[-1]) / 1000.)
 
-with open("consumer_data_2.csv") as pd:
+with open("consumer_data_4.csv") as pd:
     rd = csv.reader(pd, delimiter=';')
     for row in rd:
-        if row[0].lower() == "size":
+        key = row[0]
+        if key.lower() == "size":
             continue
-        cons_data[row[0]].append(float(row[-1]) / 1000.)
+
+        cons_data[key].append(float(row[1]) / 1000.)
+        cons_total[key].append(sum(float(k) for k in row[1:]) / 1000.)
 
 fig, axs = plt.subplots(nrows=len(ORDER), ncols=1, layout='constrained')
 
-tot_stats = calc_stats(prod_total)
+ptot_stats = calc_stats(prod_total)
 send_stats = calc_stats(prod_data)
 recv_stats = calc_stats(cons_data)
+ctot_stats = calc_stats(cons_total)
 
 for n, key in enumerate(ORDER):
-    tot = tot_stats[key]
+    ptot = ptot_stats[key]
     send = send_stats[key]
     recv = recv_stats[key]
-    tot['label'] = "Total"
+    ctot = ctot_stats[key]
+    ptot['label'] = "Ser+Send"
     send['label'] = "Send"
     recv['label'] = "Recv"
-    stats = [tot, send, recv]
+    ctot['label'] = "Recv+Parse"
+    stats = [ptot, send, recv, ctot]
     axs[n].bxp(stats)
 #    axs[n].set_yscale('symlog')
     axs[n].set_title(f"{key} array")

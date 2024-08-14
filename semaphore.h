@@ -37,7 +37,16 @@ namespace std {
             lock.unlock();
         }
 
-        bool try_acquire() noexcept;
+        bool try_acquire() {
+            std::lock_guard<std::mutex> guard{mx};
+
+            if (value == 0) {
+                return false;
+            } else  {
+                value = 0;
+                return true;
+            }
+        }
     private:
         std::ptrdiff_t value;
         std::condition_variable cv;

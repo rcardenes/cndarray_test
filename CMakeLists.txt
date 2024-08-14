@@ -24,8 +24,15 @@ FetchContent_MakeAvailable(hiredis)
 find_path(HIREDIS_INCLUDE hiredis)
 find_library(HIREDIS_LIB hiredis)
 
-include_directories("${PROJECT_SOURCE_DIR}" "${HIREDIS_INCLUDE}")
-link_libraries(${HIREDIS_LIB})
+find_package(redis++ REQUIRED)
+find_path(REDIS_PLUS_PLUS_INCLUDE_DIR sw)
+find_library(REDIS_PLUS_PLUS_LIB redis++)
+
+find_path(CNPY_INCLUDE_DIR cnpy.h)
+find_library(CNPY_LIB cnpy)
+
+include_directories("${PROJECT_SOURCE_DIR}" "${HIREDIS_INCLUDE}" "${REDIS_PLUS_PLUS_INCLUDE_DIR}" "${CNPY_INCLUDE_DIR}")
+link_libraries(${HIREDIS_LIB} ${REDIS_PLUS_PLUS_LIB} ${CNPY_LIB})
 
 add_executable(producer producer.cpp)
 add_executable(consumer consumer.cpp)

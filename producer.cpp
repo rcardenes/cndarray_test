@@ -30,7 +30,7 @@ std::vector<unsigned char> read_file(std::string file_name) {
 int main() {
     std::random_device rd;
     std::ranlux24_base gen(rd());
-    std::uniform_int_distribution<> indices(0, 4);
+    std::uniform_int_distribution<> indices(0, 2);
     std::normal_distribution<> values(-5000.0, 5000.0);
 
     auto ctx = redisConnect("localhost", 6379);
@@ -53,15 +53,14 @@ int main() {
 
     for(auto i=0; i < REPS; i++) {
         auto t1 = get_timestamp();
-        // auto idx = indices(gen);
-        auto idx = 0;
+        auto idx = indices(gen);
         unsigned dim = SHAPES[idx];
         std::vector<char>& buffer = templates[idx];
 
         std::vector<double> data(dim * dim);
         for (int i = 0; i < (dim * dim); i++)
-            // data[i] = values(gen);
-            data[i] = double(i);
+            data[i] = values(gen);
+            // data[i] = double(i);
 
         auto t2 = get_timestamp();
         npy::serialize_array(data, buffer);
