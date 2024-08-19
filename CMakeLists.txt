@@ -31,9 +31,19 @@ find_library(REDIS_PLUS_PLUS_LIB redis++)
 find_path(CNPY_INCLUDE_DIR cnpy.h)
 find_library(CNPY_LIB cnpy)
 
-include_directories("${PROJECT_SOURCE_DIR}" "${HIREDIS_INCLUDE}" "${REDIS_PLUS_PLUS_INCLUDE_DIR}" "${CNPY_INCLUDE_DIR}")
+find_path(ASIO_INCLUDE_DIR asio.hpp)
+
+include_directories(
+    "${PROJECT_SOURCE_DIR}"
+    "${HIREDIS_INCLUDE}"
+    "${REDIS_PLUS_PLUS_INCLUDE_DIR}"
+    "${CNPY_INCLUDE_DIR}"
+    "${ASIO_INCLUDE_DIR}"
+)
 link_libraries(${HIREDIS_LIB} ${REDIS_PLUS_PLUS_LIB} ${CNPY_LIB})
 
 add_executable(redis_producer redis_based/producer.cpp)
 add_executable(redis_parallel_producer redis_based/parallel_producer.cpp)
 add_executable(redis_consumer redis_based/consumer.cpp)
+add_executable(socket_producer socket_based/producer.cpp)
+add_executable(socket_consumer socket_based/consumer.cpp)
