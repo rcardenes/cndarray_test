@@ -21,21 +21,6 @@ constexpr size_t NUM_THREADS = 16;
 constexpr size_t CHUNK_SIZE = (128*128*sizeof(double));
 constexpr size_t FIRST_CHUNK = npy::HEADER_SIZE + CHUNK_SIZE;
 
-std::vector<unsigned char> read_file(std::string file_name) {
-    std::ifstream npy_file(file_name, std::ios::binary | std::ios::ate);
-    auto fsize = npy_file.tellg();
-    npy_file.seekg(0);
-
-    std::vector<unsigned char> contents;
-
-    contents.assign(
-            std::istreambuf_iterator<char>(npy_file),
-            std::istreambuf_iterator<char>()
-            );
-
-    return contents;
-}
-
 struct Shared {
     const size_t size;
     bool quit;
