@@ -35,10 +35,10 @@ def calc_stats(data):
 
     return stats
 
-prod_total = [defaultdict(list), defaultdict(list), defaultdict(list)]
-prod_data = [defaultdict(list), defaultdict(list), defaultdict(list)]
+prod_total = [defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)]
+prod_data = [defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)]
 
-with open("parallel_producer_data_5.csv") as pd:
+with open("producer_data_7.csv") as pd:
     rd = csv.reader(pd, delimiter=';')
     for row in rd:
         key = row[0]
@@ -48,7 +48,7 @@ with open("parallel_producer_data_5.csv") as pd:
         prod_total[0][key].append(sum(float(k) for k in row[2:]) / 1000.)
         prod_data[0][key].append(float(row[-1]) / 1000.)
 
-with open("parallel_producer_data_7.csv") as pd:
+with open("parallel_producer_data_9.csv") as pd:
     rd = csv.reader(pd, delimiter=';')
     for row in rd:
         key = row[0]
@@ -58,7 +58,7 @@ with open("parallel_producer_data_7.csv") as pd:
         prod_total[1][key].append(sum(float(k) for k in row[2:]) / 1000.)
         prod_data[1][key].append(float(row[-1]) / 1000.)
 
-with open("parallel_producer_data_6.csv") as pd:
+with open("parallel_producer_data_10.csv") as pd:
     rd = csv.reader(pd, delimiter=';')
     for row in rd:
         key = row[0]
@@ -68,27 +68,40 @@ with open("parallel_producer_data_6.csv") as pd:
         prod_total[2][key].append(sum(float(k) for k in row[2:]) / 1000.)
         prod_data[2][key].append(float(row[-1]) / 1000.)
 
+with open("parallel_producer_data_11.csv") as pd:
+    rd = csv.reader(pd, delimiter=';')
+    for row in rd:
+        key = row[0]
+        if key.lower() == "size":
+            continue
+
+        prod_total[3][key].append(sum(float(k) for k in row[2:]) / 1000.)
+        prod_data[3][key].append(float(row[-1]) / 1000.)
 
 
-fig, axs = plt.subplots(nrows=len(ORDER), ncols=1, layout='constrained')
 
-ptot_stats = [calc_stats(prod_total[k]) for k in range(3)]
-send_stats = [calc_stats(prod_data[k]) for k in range(3)]
+fig, axs = plt.subplots(nrows=len(ORDER), ncols=4, layout='constrained', sharey='row')
 
-for n, key in enumerate(ORDER):
-    ptot = [ptot_stats[k][key] for k in range(3)]
-    send = [send_stats[k][key] for k in range(3)]
-    ptot[0]['label'] = "|| Ser+Send"
-    send[0]['label'] = "|| Send"
-    ptot[2]['label'] = "|| Ser+Send * 2"
-    send[2]['label'] = "|| Send * 2"
-    ptot[1]['label'] = "|| Ser+Send * 4"
-    send[1]['label'] = "|| Send * 4"
-    stats = [ptot[0], send[0], ptot[1], send[1], ptot[2], send[2]]
-    axs[n].bxp(stats)
+ptot_stats = [calc_stats(p) for p in prod_total]
+send_stats = [calc_stats(p) for p in prod_data]
+
+for i, key in enumerate(ORDER):
+    axs[i][0].set_ylabel(f'{key}\nTime (ms)')
+
+for i, title in enumerate(['Serial', '16 threads', '32 threads', '64 threads']):
+    axs[0][i].set_title(title)
+
+for m, key in enumerate(ORDER):
+    for n, (ptot, send) in enumerate(zip(ptot_stats, send_stats)):
+        ptot = ptot[key]
+        send = send[key]
+        ptot['label'] = "Ser+Send"
+        send['label'] = "Send"
+        stats = [ptot, send]
+        axs[m][n].bxp(stats)
 #    axs[n].set_yscale('symlog')
-    axs[n].set_title(f"{key} array")
-    axs[n].set_ylabel('Time (ms)')
+#        axs[m][n].set_title(f"{key} array")
+#        axs[m][n].set_ylabel('Time (ms)')
     # axs[n].tick_params(axis='x', labelrotation=45)
 
 # axs[0].bxp(stats)

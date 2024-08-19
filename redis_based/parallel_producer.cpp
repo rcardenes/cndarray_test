@@ -10,15 +10,15 @@
 #include <cstdio>
 
 #include "common.h"
-#include <cxx_npy.h>
+#include "cxx_npy.h"
 #include <hiredis/hiredis.h>
 
 constexpr unsigned REPS = 1000;
 constexpr size_t MAX_DIM = 512;
 constexpr unsigned SHAPES[] = { 128, 256, 512 };
-constexpr unsigned num_chunks[] = { 2, 8, 32 };
-constexpr size_t NUM_THREADS = 32;
-constexpr size_t CHUNK_SIZE = (128*128*sizeof(double) / 2);
+constexpr unsigned num_chunks[] = { 1, 4, 16 };
+constexpr size_t NUM_THREADS = 16;
+constexpr size_t CHUNK_SIZE = (128*128*sizeof(double));
 constexpr size_t FIRST_CHUNK = npy::HEADER_SIZE + CHUNK_SIZE;
 
 std::vector<unsigned char> read_file(std::string file_name) {
@@ -111,7 +111,7 @@ void worker_loop(
 {
     size_t cmd_fmt_size = snprintf(nullptr, 0, "SET arr.%lu %%b", idx);
     char cmd_fmt[cmd_fmt_size];
-    sprintf(cmd_fmt, "SET arr.%d %%b", idx);
+    sprintf(cmd_fmt, "SET arr.%lu %%b", idx);
 
     auto ctx = redisConnect(host, port);
     while (true) {
