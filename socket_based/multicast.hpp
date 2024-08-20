@@ -10,9 +10,12 @@ constexpr short MULTICAST_PORT = 30000;
 constexpr std::string_view MULTICAST_GRP{"239.1.2.3"};
 constexpr unsigned MULTICAST_TTL = 2;
 constexpr std::string_view MULTICAST_OUTBOUND{"172.26.70.99"};
-constexpr size_t MULTICAST_PACKET_SIZE = 32768;
+constexpr size_t MULTICAST_PAYLOAD_SIZE = 32768;
+constexpr size_t MULTICAST_PACKET_SIZE = MULTICAST_PAYLOAD_SIZE + 2;
 constexpr std::string_view MULTICAST_PACKET_HEADER{"\xff\xfeMCASTPKT"};
-constexpr size_t FIRST_PACKET_SIZE = MULTICAST_PACKET_HEADER.size() + sizeof(uint16_t) + 128;
+constexpr size_t FIRST_PACKET_SIZE = MULTICAST_PACKET_HEADER.size() + sizeof(uint16_t);
+
+constexpr uint16_t NO_MORE_PACKETS = 0xffff;
 
 struct MulticastHeader {
     std::vector<char> _data_source;

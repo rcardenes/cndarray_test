@@ -19,13 +19,46 @@ constexpr unsigned SHAPES[] = { 128, 256, 512 };
 
 constexpr size_t MAX_DIM = 512;
 
+static uint8_t send_buffer[MULTICAST_PACKET_SIZE];
+
+inline void encode_header(uint8_t* buffer, uint16_t dim) {
+    auto dim_offset = MULTICAST_PACKET_HEADER.size();
+    const uint8_t* dim_ptr = reinterpret_cast<uint8_t*>(&dim);
+
+    memcpy(buffer, MULTICAST_PACKET_HEADER.data(), dim_offset);
+    buffer[dim_offset] = *dim_ptr;
+    buffer[dim_offset+1] = *(dim_ptr + 1);
+}
+
+void send_final(udp::socket& sock, udp::endpoint&endpoint) {
+    encode_header(send_buffer, NO_MORE_PACKETS);
+
+    sock.send_to(asio::buffer(send_buffer, FIRST_PACKET_SIZE), endpoint);
+}
+
 void send_vector(udp::socket& sock, udp::endpoint& endpoint, uint16_t dim, const std::vector<double>& vec) {
-    std::string first_packet(FIRST_PACKET_SIZE, ' ');
-    auto* inner = first_packet.data();
+    std::size_t payload_size = (dim * dim) * sizeof(double);
+    // The first 2 bytes are a packet counter
+    std::size_t total_payload_packets = payload_size / (MULTICAST_PAYLOAD_SIZE);
 
-    first_packet.replace(0, MULTICAST_PACKET_HEADER.size(), MULTICAST_PACKET_HEADER);
+    // std::cerr << "Sending " << dim << 'x' << dim << " array, " << total_payload_packets << " packets\n";
 
-    sock.send_to(asio::buffer(first_packet), endpoint);
+    encode_header(send_buffer, dim);
+
+    sock.send_to(asio::buffer(send_buffer, FIRST_PACKET_SIZE), endpoint);
+
+    uint16_t packet_counter = 0;
+    const uint8_t* payload_ptr = reinterpret_cast<const uint8_t*>(vec.data());
+    const char* pc_ptr = reinterpret_cast<char *>(&packet_counter);
+    while (packet_counter < total_payload_packets) {
+        send_buffer[0] = *pc_ptr;
+        send_buffer[1] = *(pc_ptr + 1);
+        memcpy(&send_buffer[2], payload_ptr, MULTICAST_PAYLOAD_SIZE);
+
+        sock.send_to(asio::buffer(send_buffer, MULTICAST_PACKET_SIZE), endpoint);
+
+        packet_counter++;
+    }
     
 }
 
@@ -55,7 +88,7 @@ int main() {
         views.emplace_back(templ.data(), templ.size());
     }
 
-    std::cout << "Size;Generation(µs);Serialization(µs);ToRedis(µs)\n";
+    std::cout << "Size;Generation(µs);Sending(µs)\n";
     std::vector<double> data(MAX_DIM*MAX_DIM);
 
     std::string_view foo_text{"foo bar"};
@@ -72,18 +105,14 @@ int main() {
             // data[i] = double(i);
 
         auto t2 = get_timestamp();
-        npy::serialize_array(data, buffer);
-        auto t3 = get_timestamp();
-
         send_vector(sock, mcast_endpoint, dim, data);
-        auto t4 = get_timestamp();
+        auto t3 = get_timestamp();
         std::cout << dim << 'x' << dim << ';'
                   << time_diff_us(t1, t2) << ';'
-                  << time_diff_us(t2, t3) << ';'
-                  << time_diff_us(t3, t4) << '\n';
+                  << time_diff_us(t2, t3) << '\n';
     }
 
-    // redisCommand(ctx, "SET arr::done 1");
+    send_final(sock, mcast_endpoint);
 
     return 0;
 }
