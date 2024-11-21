@@ -43,7 +43,9 @@ include_directories(
 link_libraries(${HIREDIS_LIB} ${REDIS_PLUS_PLUS_LIB} ${CNPY_LIB})
 
 add_executable(redis_producer redis_based/producer.cpp)
+add_executable(redis_producer_rio redis_based/producer_rio.cpp)
 add_executable(redis_parallel_producer redis_based/parallel_producer.cpp)
 add_executable(redis_consumer redis_based/consumer.cpp)
+add_executable(redis_consumer_rio redis_based/consumer_rio.cpp)
 add_executable(socket_producer socket_based/producer.cpp)
 add_executable(socket_consumer socket_based/consumer.cpp)

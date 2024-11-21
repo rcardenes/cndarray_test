@@ -3,4 +3,5 @@ producer
 consumer
 *.o
 .clangd
+.cache
 build/
