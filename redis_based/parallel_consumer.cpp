@@ -86,7 +86,7 @@ int main() {
 
     auto sub = redis.subscriber();
     sub.on_message([&](std::string channel, std::string message) {
-            if (channel == "__keyspace@0__:arr") {
+            if (channel == "__keyspace@0__:arr::new") {
                 counter++;
                 worker.read_array();
             } else if (channel == "__keyspace@0__:arr::done") {
@@ -109,6 +109,7 @@ int main() {
     }};
 
     worker.loop();
+    t_receiver.join();
     std::cout << "Received: " << counter << " notifications\n";
 
     return 0;

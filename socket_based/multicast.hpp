@@ -9,7 +9,7 @@
 constexpr short MULTICAST_PORT = 30000;
 constexpr std::string_view MULTICAST_GRP{"239.1.2.3"};
 constexpr unsigned MULTICAST_TTL = 2;
-constexpr std::string_view MULTICAST_OUTBOUND{"172.26.70.99"};
+constexpr std::string_view MULTICAST_OUTBOUND{"192.168.1.201"};
 constexpr size_t MULTICAST_PAYLOAD_SIZE = 32768;
 constexpr size_t MULTICAST_PACKET_SIZE = MULTICAST_PAYLOAD_SIZE + 2;
 constexpr std::string_view MULTICAST_PACKET_HEADER{"\xff\xfeMCASTPKT"};

@@ -7,6 +7,7 @@
 
 #include <common.h>
 #include <cxx_npy.h>
+#include <test_type.hpp>
 #include "multicast.hpp"
 
 #include <asio.hpp>
@@ -115,7 +116,7 @@ int main() {
         if (dim == NO_MORE_PACKETS)
             break;
 
-        std::size_t total_packets = (dim * dim * sizeof(double)) / MULTICAST_PAYLOAD_SIZE;
+        std::size_t total_packets = (dim * dim * sizeof(TestType)) / MULTICAST_PAYLOAD_SIZE;
         std::size_t next_packet = 0;
         // std::cerr << "Receiving an " << dim << 'x' << dim << " array, " << total_packets << " packets\n";
 

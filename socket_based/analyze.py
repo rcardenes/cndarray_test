@@ -71,7 +71,7 @@ for n, key in enumerate(ORDER):
     recv = recv_stats[key]
     send['label'] = "Send"
     recv['label'] = "Recv"
-    stats = [send, recv]
+    stats = [send]
     axs[n].bxp(stats)
 #    axs[n].set_yscale('symlog')
     axs[n].set_title(f"{key} array")

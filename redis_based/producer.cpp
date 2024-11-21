@@ -7,6 +7,7 @@
 
 #include "common.h"
 #include <cxx_npy.h>
+#include "test_type.hpp"
 #include <hiredis/hiredis.h>
 
 constexpr unsigned REPS = 1000;
@@ -34,13 +35,13 @@ int main() {
     std::vector<std::vector<char>> templates;
     std::vector<std::string_view> views;
     for (auto dim: SHAPES) {
-        templates.push_back(npy::generate_template_array(dim));
+        templates.push_back(npy::generate_template_array<TestType>(dim));
         auto&& templ = templates.back();
         views.emplace_back(templ.data(), templ.size());
     }
 
     std::cout << "Size;Generation(µs);Serialization(µs);ToRedis(µs)\n";
-    std::vector<double> data(MAX_DIM*MAX_DIM);
+    std::vector<TestType> data(MAX_DIM*MAX_DIM);
 
     for(auto i=0; i < REPS; i++) {
         auto t1 = get_timestamp();

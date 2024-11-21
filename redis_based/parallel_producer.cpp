@@ -11,15 +11,26 @@
 
 #include "common.h"
 #include "cxx_npy.h"
+#include "test_type.hpp"
 #include <hiredis/hiredis.h>
 
 constexpr unsigned REPS = 1000;
 constexpr size_t MAX_DIM = 512;
 constexpr unsigned SHAPES[] = { 128, 256, 512 };
-constexpr unsigned num_chunks[] = { 1, 4, 16 };
-constexpr size_t NUM_THREADS = 16;
-constexpr size_t CHUNK_SIZE = (128*128*sizeof(double));
+
+constexpr size_t CHUNK_SIZE = (128*128*sizeof(uint16_t));
 constexpr size_t FIRST_CHUNK = npy::HEADER_SIZE + CHUNK_SIZE;
+
+// Number of threads depending on the test type
+template<typename T>
+constexpr unsigned num_chunks[] = { 1, 4, 16 };
+template<>
+constexpr unsigned num_chunks<float>[] = { 2, 8, 32 };
+template<>
+constexpr unsigned num_chunks<double>[] = { 4, 16, 64 };
+
+// Number of threads should be the maximum number of chunks
+constexpr size_t NUM_THREADS = num_chunks<TestType>[2];
 
 struct Shared {
     const size_t size;
@@ -132,8 +143,9 @@ int main() {
 
     std::vector<std::vector<char>> templates;
     for (auto dim: SHAPES) {
-        templates.push_back(npy::generate_template_array(dim));
+        templates.push_back(npy::generate_template_array<TestType>(dim));
     }
+
 
     Shared sh{NUM_THREADS};
 
@@ -144,13 +156,13 @@ int main() {
     }
 
     std::cout << "Size;Generation(µs);Serialization(µs);ToRedis(µs)\n";
-    std::vector<double> data(MAX_DIM*MAX_DIM);
+    std::vector<TestType> data(MAX_DIM*MAX_DIM);
 
     for(auto i = 0; i < REPS; i++) {
         auto t1 = get_timestamp();
         auto idx = indices(gen);
         unsigned dim = SHAPES[idx];
-        unsigned nchunks = num_chunks[idx];
+        unsigned nchunks = num_chunks<TestType>[idx];
         auto& buffer = templates[idx];
 
         for (int i = 0; i < (dim * dim); i++)
@@ -170,6 +182,8 @@ int main() {
         }
 
         sh.wait_idle();
+
+        redisCommand(ctx, "SET arr::new 1");
 
         auto t4 = get_timestamp();
         std::cout << dim << 'x' << dim << ';'

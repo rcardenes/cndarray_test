@@ -1,10 +1,6 @@
-#include <string>
 #include <vector>
 #include <iostream>
-#include <fstream>
-#include <iterator>
 #include <random>
-#include <algorithm>
 
 #include <asio.hpp>
 
@@ -13,6 +9,7 @@ using asio::ip::udp;
 #include "multicast.hpp"
 #include <common.h>
 #include <cxx_npy.h>
+#include "test_type.hpp"
 
 constexpr unsigned REPS = 1000;
 constexpr unsigned SHAPES[] = { 128, 256, 512 };
@@ -36,8 +33,9 @@ void send_final(udp::socket& sock, udp::endpoint&endpoint) {
     sock.send_to(asio::buffer(send_buffer, FIRST_PACKET_SIZE), endpoint);
 }
 
-void send_vector(udp::socket& sock, udp::endpoint& endpoint, uint16_t dim, const std::vector<double>& vec) {
-    std::size_t payload_size = (dim * dim) * sizeof(double);
+template<typename T>
+void send_vector(udp::socket& sock, udp::endpoint& endpoint, uint16_t dim, const std::vector<T>& vec) {
+    std::size_t payload_size = (dim * dim) * sizeof(T);
     // The first 2 bytes are a packet counter
     std::size_t total_payload_packets = payload_size / (MULTICAST_PAYLOAD_SIZE);
 
@@ -57,6 +55,7 @@ void send_vector(udp::socket& sock, udp::endpoint& endpoint, uint16_t dim, const
 
         sock.send_to(asio::buffer(send_buffer, MULTICAST_PACKET_SIZE), endpoint);
 
+        payload_ptr += MULTICAST_PAYLOAD_SIZE;
         packet_counter++;
     }
     
@@ -83,13 +82,13 @@ int main() {
     std::vector<std::vector<char>> templates;
     std::vector<std::string_view> views;
     for (auto dim: SHAPES) {
-        templates.push_back(npy::generate_template_array(dim));
+        templates.push_back(npy::generate_template_array<TestType>(dim));
         auto&& templ = templates.back();
         views.emplace_back(templ.data(), templ.size());
     }
 
     std::cout << "Size;Generation(µs);Sending(µs)\n";
-    std::vector<double> data(MAX_DIM*MAX_DIM);
+    std::vector<TestType> data(MAX_DIM*MAX_DIM);
 
     std::string_view foo_text{"foo bar"};
 
