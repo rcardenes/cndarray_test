@@ -1,5 +1,7 @@
 #include <chrono>
 #include <cstdlib>
+#include <hiredis/hiredis.h>
+#include <hiredis/read.h>
 #include <string>
 #include <iostream>
 #include <thread>
@@ -55,7 +57,7 @@ bool Worker::done() {
 
 void Worker::loop() {
     size_t counter = 0;
-    std::cout << "Size;FromRedis(µs);Parse(µs)\n";
+    std::cout << "Size;FromRedis(µs)\n";
     do {
         inner_sem.acquire();
         auto t1 = get_timestamp();
@@ -69,23 +71,22 @@ void Worker::loop() {
             freeReplyObject(reply);
             continue;
         } else if (reply->type == REDIS_REPLY_ARRAY) {
-            std::cout << reply->elements << " elements array\n";
+            auto t2 = get_timestamp();
+            auto r1 = reply->element[0];
+            auto r2 = reply->element[1];
+
+            if (r1->type != REDIS_REPLY_INTEGER || r2->type != REDIS_REPLY_INTEGER) {
+                freeReplyObject(reply);
+                continue;
+            }
+            counter++;
+            std::cout << r1->integer << "x" << r2->integer << ';'
+                      << time_diff_us(t1, t2) << '\n';
         } else {
             std::cerr << "Wrong reply type\n";
             freeReplyObject(reply);
             continue;
         }
-        /*auto t2 = get_timestamp();*/
-        /*counter++;*/
-        /*bool fortran_order;*/
-        /*size_t word_size;*/
-        /*std::vector<size_t> shape;*/
-        /*cnpy::parse_npy_header(reinterpret_cast<unsigned char*>((*raw_array).data()), word_size, shape, fortran_order);*/
-        /*size_t dim = shape[0];*/
-        /*auto t3 = get_timestamp();*/
-        /*std::cout << dim << "x" << dim << ';'*/
-        /*          << time_diff_us(t1, t2) << ';'*/
-        /*          << time_diff_us(t2, t3) << '\n';*/
         outer_sem.release();
     } while(true);
 }

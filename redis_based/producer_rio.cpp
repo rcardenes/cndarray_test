@@ -13,7 +13,7 @@
 
 using std::chrono::operator""ms;
 
-constexpr unsigned REPS = 100;
+constexpr unsigned REPS = 1000;
 
 constexpr size_t MAX_DIM = 512;
 
